@@ -1,4 +1,7 @@
 function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
+import { useState, useMemo, useEffect, useRef } from 'react';
+import { Activity, Wind, Waves, Zap, AlertTriangle, TrendingUp, TrendingDown, Minus, Heart, Droplet, Info } from 'lucide-react';
+
 // =============== Utility: thresholds by weight ===============
 // Each returns { min, max, safe: [lo, hi], caution: [lo, hi] } — anything outside caution = danger
 
@@ -2318,7 +2321,7 @@ function ReferencesModal({
 }
 
 // =============== Main component ===============
-function NeoVentSim() {
+export default function NeoVentSim() {
   const [weight, setWeight] = useState(1.0);
   const [ga, setGA] = useState(28);
   const [referencesOpen, setReferencesOpen] = useState(false);
@@ -3495,7 +3498,7 @@ function HFJVPanel({
       label: 'Standard'
     }, {
       value: 'elbw',
-      label: 'B/O ELBW'
+      label: 'Aggressive ELBW'
     }, {
       value: 'cdh',
       label: 'CDH'

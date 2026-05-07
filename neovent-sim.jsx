@@ -2466,7 +2466,7 @@ function HFJVPanel({ state, setState, weight, ga }) {
               options={[
                 { value: 'general', label: 'General' },
                 { value: 'standard', label: 'Standard' },
-                { value: 'elbw', label: 'B/O ELBW' },
+                { value: 'elbw', label: 'Aggressive ELBW' },
                 { value: 'cdh', label: 'CDH' },
                 { value: 'mas', label: 'MAS' },
               ]}
