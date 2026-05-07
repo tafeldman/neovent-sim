@@ -11,35 +11,34 @@
   <style>
     body { background-color: #020617; margin: 0; font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
     #root { min-height: 100vh; }
-    .loading { display: flex; align-items: center; justify-content: center; min-height: 100vh; color: #94a3b8; font-family: 'IBM Plex Mono', monospace; }
   </style>
 </head>
 <body>
-  <div id="root"><div class="loading">Loading NeoVent Simulator...</div></div>
+  <div id="root"></div>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://unpkg.com/lucide-react@0.383.0/dist/umd/lucide-react.min.js"></script>
   <script>
-    const { useState, useMemo, useEffect, useRef } = React;
-    const { Activity, Wind, Waves, Zap, AlertTriangle, TrendingUp, TrendingDown, Minus, Heart, Droplet, Info } = window.lucide;
-    (async () => {
-      try {
-        const response = await fetch('neovent-sim.jsx');
-        if (!response.ok) throw new Error('Failed to fetch neovent-sim.jsx: ' + response.status);
-        const code = await response.text();
-        const processedCode = code
-          .replace(/^import\s+[^\n]*\n/gm, '')
-          .replace(/export\s+default\s+function/, 'function');
-        const transformed = Babel.transform(processedCode, { presets: ['react'], filename: 'app.jsx' }).code;
-        eval(transformed);
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(React.createElement(NeoVentSim));
-      } catch (error) {
-        console.error('Failed to load NeoVentSim:', error);
-        document.getElementById('root').innerHTML = '<div style="color:#ef4444;padding:20px;font-family:monospace"><h1>Error Loading</h1><p>' + error.message + '</p></div>';
-      }
-    })();
+    var useState = React.useState;
+    var useMemo = React.useMemo;
+    var useEffect = React.useEffect;
+    var useRef = React.useRef;
+    var Activity = window.lucide.Activity;
+    var Wind = window.lucide.Wind;
+    var Waves = window.lucide.Waves;
+    var Zap = window.lucide.Zap;
+    var AlertTriangle = window.lucide.AlertTriangle;
+    var TrendingUp = window.lucide.TrendingUp;
+    var TrendingDown = window.lucide.TrendingDown;
+    var Minus = window.lucide.Minus;
+    var Heart = window.lucide.Heart;
+    var Droplet = window.lucide.Droplet;
+    var Info = window.lucide.Info;
+  </script>
+  <script src="neovent-sim.js"></script>
+  <script>
+    var root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(React.createElement(NeoVentSim));
   </script>
 </body>
 </html>
