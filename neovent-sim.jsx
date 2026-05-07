@@ -76,7 +76,7 @@ function hfovFreqThresholds(w) {
 
 function hfjvPeepThresholds(w, preset = 'general') {
   if (preset === 'elbw') return { min: 2, max: 12, safe: [4, 6], caution: [3, 8] };
-  if (preset === 'bunnell') return { min: 2, max: 14, safe: [5, 8], caution: [4, 10] };
+  if (preset === 'standard') return { min: 2, max: 14, safe: [5, 8], caution: [4, 10] };
   // CDH: gentle ventilation, but PEEP may climb to recruit / support MAP
   if (preset === 'cdh') return { min: 3, max: 14, safe: [5, 9], caution: [4, 12] };
   // MAS: term-baby range; high PEEP risks worsening gas trapping
@@ -86,13 +86,13 @@ function hfjvPeepThresholds(w, preset = 'general') {
 }
 
 function hfjvPipThresholds(w, ga = 30, phase = 'RDS', preset = 'general') {
-  // Baptist/Ochsner ELBW protocol: initial 22-24 (2.5 ETT), failure >45-47
+  // Aggressive ELBW protocol: initial 22-24 (2.5 ETT), failure >45-47
   if (preset === 'elbw') {
     if (phase === 'RDS') return { min: 12, max: 50, safe: [20, 28], caution: [16, 38] };
     return { min: 12, max: 50, safe: [22, 34], caution: [18, 42] };
   }
-  // Bunnell: match CV PIP initially, wean slowly; failure approaching 50
-  if (preset === 'bunnell') return { min: 10, max: 50, safe: [16, 28], caution: [12, 38] };
+  // Standard: match CV PIP initially, wean slowly; failure approaching 50
+  if (preset === 'standard') return { min: 10, max: 50, safe: [16, 28], caution: [12, 38] };
   // CDH: gentle ventilation — keep < 26 (Caution Zone), < 30 (Hazard Zone)
   if (preset === 'cdh') return { min: 12, max: 40, safe: [18, 24], caution: [14, 26] };
   // MAS: jet PIP should stay ≤ prior CV PIP; generally moderate range
@@ -103,7 +103,7 @@ function hfjvPipThresholds(w, ga = 30, phase = 'RDS', preset = 'general') {
 }
 
 function hfjvRateThresholds(ga = 30, w = 1.0, preset = 'general') {
-  // Baptist/Ochsner: GA-based baseline, ±30 safe, ±60 caution
+  // Aggressive ELBW: GA-based baseline, ±30 safe, ±60 caution
   if (preset === 'elbw') {
     const base = ga < 24 ? 300 : (ga <= 26 ? 360 : 420);
     return {
@@ -113,8 +113,8 @@ function hfjvRateThresholds(ga = 30, w = 1.0, preset = 'general') {
       recommended: base,
     };
   }
-  // Bunnell: 420 default for most neonates, 240-320 for air leak/obstructive
-  if (preset === 'bunnell') return { min: 240, max: 660, safe: [360, 480], caution: [240, 540], step: 20, recommended: 420 };
+  // Standard: 420 default for most neonates, 240-320 for air leak/obstructive
+  if (preset === 'standard') return { min: 240, max: 660, safe: [360, 480], caution: [240, 540], step: 20, recommended: 420 };
   // CDH: term-baby standard; lower rates if PIE/PTX
   if (preset === 'cdh') return { min: 240, max: 600, safe: [360, 420], caution: [240, 480], step: 20, recommended: 420 };
   // MAS: low rate by design — high I:E ratio for gas-trapping (Tingay piglet model)
@@ -634,17 +634,22 @@ function TrackCard({ track }) {
       {track.headline && <p className="text-xs text-slate-300 mb-2 leading-relaxed">{track.headline}</p>}
 
       {track.primary && track.primary.length > 0 && (
-        <ol className="space-y-1.5">
-          {track.primary.filter(Boolean).map((step, i) => (
-            <li key={i} className="text-xs text-slate-200 flex gap-2">
-              <span className="num text-[10px] font-mono text-slate-500 shrink-0 mt-0.5">{i + 1}.</span>
-              <span className="leading-relaxed">{step}</span>
-            </li>
-          ))}
-        </ol>
+        <div>
+          <p className="text-[10px] uppercase tracking-wider text-slate-500 font-mono mb-1">Options to consider</p>
+          <ol className="space-y-1.5">
+            {track.primary.filter(Boolean).map((step, i) => (
+              <li key={i} className="text-xs text-slate-200 flex gap-2">
+                <span className="num text-[10px] font-mono text-slate-500 shrink-0 mt-0.5">{i + 1}.</span>
+                <span className="leading-relaxed">{step}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
       )}
 
       {track.alternates && track.alternates.length > 0 && (
+        <div>
+        <p className="text-[10px] uppercase tracking-wider text-slate-500 font-mono mb-1 mt-2">If / then guide</p>
         <ul className="space-y-1.5">
           {track.alternates.map((alt, i) => (
             <li key={i} className="text-xs flex gap-2">
@@ -656,6 +661,7 @@ function TrackCard({ track }) {
             </li>
           ))}
         </ul>
+        </div>
       )}
 
       {track.caveat && (
@@ -678,7 +684,7 @@ function SuggestionsPanel({ tracks }) {
 
   return (
     <div className="space-y-3">
-      <h3 className="text-xs uppercase tracking-widest text-slate-400 font-mono">Recommendations</h3>
+      <h3 className="text-xs uppercase tracking-widest text-slate-400 font-mono">Decision support · considerations</h3>
       {sorted.map((t, i) => <TrackCard key={i} track={t} />)}
     </div>
   );
@@ -1164,7 +1170,7 @@ function buildHfjvTracks({ state, observed, weight, ga, preset, phase, recRate }
         primary: [
           'Verify ETT position — rule out cuff leak / partial dislodgement',
           'If ETT confirmed in place, indicates improving compliance — start weaning',
-          'Begin with FiO₂ wean (Bunnell principle) before lowering MAP/PIP',
+          'Begin with FiO₂ wean (standard principle) before lowering MAP/PIP',
         ] });
     } else if (sp < 6 || sp > 14) {
       tracks.push({ title: 'Servo pressure', icon: Activity, accent: 'rose', state: 'caution',
@@ -1201,11 +1207,11 @@ function buildHfjvTracks({ state, observed, weight, ga, preset, phase, recRate }
           ]
         : [
             { condition: 'If low SpO₂', action: '↑ FiO₂ first; ↑ PEEP by 1 — primary MAP/recruitment lever; CV sigh breaths if atelectasis on CXR' },
-            { condition: 'If high SpO₂', action: '↓ FiO₂ first to < 0.30 (Bunnell); then ↓ PEEP by 1' },
+            { condition: 'If high SpO₂', action: '↓ FiO₂ first to < 0.30 (standard); then ↓ PEEP by 1' },
           ];
     if (!_has(spo2)) {
       tracks.push({ title: 'Oxygenation', icon: Droplet, accent: 'cyan', state: 'idle',
-        headline: `${presetIntro} · PEEP-dominant MAP · Bunnell weaning order: FiO₂ first, then MAP`,
+        headline: `${presetIntro} · PEEP-dominant MAP · Standard weaning order: FiO₂ first, then MAP`,
         alternates: baseAlts });
     } else if (spo2 < t.caution[0]) {
       tracks.push({ title: 'Oxygenation', icon: Droplet, accent: 'cyan', state: 'critical',
@@ -1232,7 +1238,7 @@ function buildHfjvTracks({ state, observed, weight, ga, preset, phase, recRate }
     } else {
       tracks.push({ title: 'Oxygenation', icon: Droplet, accent: 'cyan', state: 'in-range',
         headline: `SpO₂ ${spo2}% — within target ${t.safe[0]}–${t.safe[1]}%${preset === 'cdh' && spo2 >= 95 ? ' · Ideal Patient on Safe Zone' : ''}`,
-        primary: ['Current PEEP and FiO₂ working — maintain', 'Bunnell weaning order: FiO₂ first, then MAP'] });
+        primary: ['Current PEEP and FiO₂ working — maintain', 'Standard weaning order: FiO₂ first, then MAP'] });
     }
   }
 
@@ -1256,7 +1262,7 @@ function buildHfjvTracks({ state, observed, weight, ga, preset, phase, recRate }
         primary: [
           'Increase Jet PIP by 1–2 cmH₂O (widens ΔP)',
           'ΔP change 1–2 cm = ±2–4 mmHg pCO₂; 3–4 cm = ±5–9; 5–6 cm = ±10–15',
-          phase === 'CLD' && (preset === 'general' || preset === 'elbw' || preset === 'bunnell') ? 'After DOL 14, ↑ rate by 60 if CXR adequately expanded but hazy' : null,
+          phase === 'CLD' && (preset === 'general' || preset === 'elbw' || preset === 'standard') ? 'After DOL 14, ↑ rate by 60 if CXR adequately expanded but hazy' : null,
           preset === 'mas' ? 'In MAS gas-trapping: prioritize lower rate (240–300) for longer expiratory time before ↑ PIP' : null,
           'Suction ETT, check servo pressure trend, exclude tube migration',
           'Recheck blood gas in 15–20 minutes after PIP change',
@@ -1395,16 +1401,16 @@ function buildHfjvTracks({ state, observed, weight, ga, preset, phase, recRate }
     }
   }
 
-  // CONDITIONAL — ELBW failure criteria
+  // CONDITIONAL — ELBW escalation criteria
   if (preset === 'elbw') {
     if (state.pip >= 45) {
-      tracks.push({ title: 'ELBW failure criteria', icon: AlertTriangle, accent: 'rose', state: 'critical',
-        headline: `Jet PIP ${state.pip} ≥ 45 — Baptist/Ochsner failure threshold`,
+      tracks.push({ title: 'ELBW escalation criteria', icon: AlertTriangle, accent: 'rose', state: 'critical',
+        headline: `Jet PIP ${state.pip} ≥ 45 — ELBW protocol escalation threshold`,
         primary: ['Transition to HFOV', 'Optimize MAP on HFOV (typically prior MAP + 2)', 'Reassess after 1–2h on HFOV'] });
     }
     if (state.fio2 >= 0.75) {
-      tracks.push({ title: 'ELBW failure criteria', icon: AlertTriangle, accent: 'rose', state: 'critical',
-        headline: `FiO₂ ${(state.fio2 * 100).toFixed(0)}% ≥ 75% — failure threshold`,
+      tracks.push({ title: 'ELBW escalation criteria', icon: AlertTriangle, accent: 'rose', state: 'critical',
+        headline: `FiO₂ ${(state.fio2 * 100).toFixed(0)}% ≥ 75% — escalation threshold`,
         primary: ['CXR to assess expansion and infiltrate pattern', 'If criteria met, transition to HFOV', 'Otherwise optimize PEEP and consider repeat surfactant if eligible'] });
     }
     if (_has(o.measuredMAP)) {
@@ -1462,9 +1468,9 @@ const referenceSections = [
     ],
   },
   {
-    title: 'HFJV (servo pressure, Bunnell weaning order, sigh breaths, ΔP–pCO₂)',
+    title: 'HFJV (servo pressure, standard weaning order, sigh breaths, ΔP–pCO₂)',
     refs: [
-      "Bunnell Life Pulse High-Frequency Ventilator Operator's Manual and Clinical Procedures Guide. Bunnell Inc.",
+      "High-Frequency Jet Ventilator Operator's Manual and Clinical Procedures Guide.",
       'Keszler M, Modanlou HD, Brudno DS, et al. Multicenter controlled clinical trial of high-frequency jet ventilation in preterm infants with uncomplicated respiratory distress syndrome. Pediatrics. 1997;100(4):593–599.',
       'Keszler M, Donn SM, Bucciarelli RL, et al. Multicenter controlled trial comparing high-frequency jet ventilation and conventional mechanical ventilation in newborn infants with pulmonary interstitial emphysema. J Pediatr. 1991;119(1):85–93.',
     ],
@@ -1478,17 +1484,17 @@ const referenceSections = [
     ],
   },
   {
-    title: 'ELBW HFJV pathway, failure criteria, late surfactant',
+    title: 'ELBW HFJV pathway, escalation criteria, late surfactant',
     refs: [
-      'Baptist Health / Ochsner NICU institutional ELBW HFJV protocol (PIP ≥ 45 cmH₂O, FiO₂ ≥ 0.75 with 9–10 rib expansion + diffuse haze → transition to HFOV; RSS > 4 in DOL 0–14 → consider repeat surfactant 12h after prior dose).',
+      'Institutional aggressive ELBW HFJV protocol (PIP ≥ 45 cmH₂O, FiO₂ ≥ 0.75 with 9–10 rib expansion + diffuse haze → transition to HFOV; RSS > 4 in DOL 0–14 → consider repeat surfactant 12h after prior dose).',
       'Bahadue FL, Soll R. Early versus delayed selective surfactant treatment for neonatal respiratory distress syndrome. Cochrane Database Syst Rev. 2012;(11):CD001456.',
       'Polin RA, Carlo WA; AAP Committee on Fetus and Newborn. Surfactant replacement therapy for preterm and term neonates with respiratory distress. Pediatrics. 2014;133(1):156–163.',
     ],
   },
   {
-    title: 'Lecture-aligned first-intention HFJV (general preset · Rev 4-2026)',
+    title: 'Lecture-aligned first-intention HFJV (general preset)',
     refs: [
-      'Institutional HFJV Guidelines, Rev 4-2026 — first-intention HFJV for <27 wk or <1000 g: PEEP 5; PIP 20–24 ("good wiggle"); GA-or-weight-based jet rate (300/360/420); Jet IT 0.02 s; no initial sigh breaths.',
+      'Lecture-aligned first-intention HFJV guidelines for <27 wk or <1000 g: PEEP 5; PIP 20–24 ("good wiggle"); GA-or-weight-based jet rate (300/360/420); Jet IT 0.02 s; no initial sigh breaths.',
       'Hypercarbia titration: ΔP change 1–2 cm = ±2–4 mmHg; 3–4 cm = ±5–9; 5–6 cm = ±10–15. Recheck blood gas 15–20 min after PIP change.',
       'Sigh breath settings (when used): rate 4, PIP = PEEP + 5–10, iTime 0.4 s. Pearl: if sigh breaths improve sats, PEEP may be too low.',
       'Extubation targets — RDS phase: PEEP <7, Jet PIP <18, ΔP <10, MAP <8, FiO₂ <0.30. BPD phase: MAP ≤10–12, FiO₂ ≤0.40, ΔP <14–16.',
@@ -1521,6 +1527,43 @@ const referenceSections = [
     ],
   },
 ];
+
+function DisclaimerModal({ onAcknowledge }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm px-4">
+      <div className="bg-slate-900 border border-slate-700 rounded-xl max-w-lg w-full p-6 shadow-2xl">
+        <h2 className="text-lg font-bold text-amber-400 font-mono mb-4 flex items-center gap-2">
+          <AlertTriangle size={20} /> Educational Decision-Support Tool
+        </h2>
+        <div className="space-y-3 text-sm text-slate-300 leading-relaxed">
+          <p>
+            <strong className="text-slate-100">NeoVent Sim</strong> is designed as an educational
+            decision-support tool for healthcare professionals involved in neonatal ventilator management.
+          </p>
+          <p>
+            This tool is <strong className="text-amber-300">not FDA-cleared</strong>, not a medical device,
+            and does not constitute medical advice. Simulated physiology is based on simplified models
+            and assumed compliance values.
+          </p>
+          <p>
+            All clinical decisions must be independently verified by a qualified clinician at the bedside.
+            Do not use this tool as the sole basis for ventilator adjustments.
+          </p>
+          <p className="text-xs text-slate-500 italic">
+            Intended audience: neonatologists, neonatal fellows, NNPs, respiratory therapists,
+            and other NICU clinicians.
+          </p>
+        </div>
+        <button
+          onClick={onAcknowledge}
+          className="mt-5 w-full py-2.5 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-300 font-mono text-sm font-semibold hover:bg-amber-500/30 transition-colors"
+        >
+          I understand — continue
+        </button>
+      </div>
+    </div>
+  );
+}
 
 function ReferencesModal({ onClose }) {
   useEffect(() => {
@@ -1592,6 +1635,7 @@ export default function NeoVentSim() {
   const [weight, setWeight] = useState(1.0);
   const [ga, setGA] = useState(28);
   const [referencesOpen, setReferencesOpen] = useState(false);
+  const [disclaimerAcknowledged, setDisclaimerAcknowledged] = useState(false);
   const [mode, setMode] = useState('simv');
 
   // Per-mode state
@@ -1703,6 +1747,7 @@ export default function NeoVentSim() {
       </footer>
 
       {referencesOpen && <ReferencesModal onClose={() => setReferencesOpen(false)} />}
+      {!disclaimerAcknowledged && <DisclaimerModal onAcknowledge={() => setDisclaimerAcknowledged(true)} />}
     </div>
   );
 }
@@ -2338,12 +2383,12 @@ function HFJVPanel({ state, setState, weight, ga }) {
   let extCrit;
   if (preset === 'elbw') {
     extCrit = phase === 'RDS'
-      ? { map: 8, fio2: 0.40, dP: 12, label: 'Baptist/Ochsner ELBW · DOL <14 (RDS)' }
-      : { map: 12, fio2: 0.55, dP: 16, label: 'Baptist/Ochsner ELBW · DOL ≥14 (CLD)' };
-  } else if (preset === 'bunnell') {
+      ? { map: 8, fio2: 0.40, dP: 12, label: 'Aggressive ELBW · DOL <14 (RDS)' }
+      : { map: 12, fio2: 0.55, dP: 16, label: 'Aggressive ELBW · DOL ≥14 (CLD)' };
+  } else if (preset === 'standard') {
     extCrit = phase === 'RDS'
-      ? { map: 8, fio2: 0.30, dP: 10, label: 'Bunnell · RDS phase' }
-      : { map: 10, fio2: 0.35, dP: 12, label: 'Bunnell · CLD phase' };
+      ? { map: 8, fio2: 0.30, dP: 10, label: 'Standard · RDS phase' }
+      : { map: 10, fio2: 0.35, dP: 12, label: 'Standard · CLD phase' };
   } else if (preset === 'cdh') {
     // CDH: gentle ventilation; extubation typically off HFV after surgical repair
     extCrit = { map: 10, fio2: 0.40, dP: 12, label: 'CDH · post-repair wean' };
@@ -2351,7 +2396,7 @@ function HFJVPanel({ state, setState, weight, ga }) {
     // MAS: term-baby standard; expect rapid resolution post lung-clearing
     extCrit = { map: 8, fio2: 0.30, dP: 10, label: 'MAS · clearing phase' };
   } else {
-    // General — lecture (Rev 4-2026) tighter targets
+    // General — lecture-aligned tighter targets
     extCrit = phase === 'RDS'
       ? { map: 8, fio2: 0.30, dP: 10, label: 'General (lecture) · RDS phase' }
       : { map: 12, fio2: 0.40, dP: 16, label: 'General (lecture) · BPD phase' };
@@ -2363,26 +2408,26 @@ function HFJVPanel({ state, setState, weight, ga }) {
   };
   const extAllMet = extReady.map && extReady.fio2 && extReady.dP;
 
-  // RSS trigger for late surfactant (Baptist/Ochsner DOL 6-14 concept)
+  // RSS trigger for late surfactant (DOL 6-14 concept)
   const rssHigh = rss > 4;
 
   // Warnings — preset-specific
   const warnings = [];
   if (preset === 'elbw') {
-    // Baptist/Ochsner ELBW protocol failure criteria
+    // Aggressive ELBW protocol escalation criteria
     if (state.pip >= 45) warnings.push(`HFJV FAILURE CRITERIA: Jet PIP ${state.pip} ≥45 cmH₂O — consider transition to HFOV.`);
     if (state.fio2 >= 0.75) warnings.push(`HFJV FAILURE CRITERIA: FiO₂ ${(state.fio2*100).toFixed(0)}% ≥75% — if 9–10 rib expansion with diffuse white-out, transition to HFOV.`);
     if (rssHigh && phase === 'RDS') warnings.push(`RSS ${rss.toFixed(1)} >4 — consider repeat surfactant (eligible 12h from prior; DOL 0–14). Also check for post-surfactant slump.`);
     if (state.fio2 >= 0.40 && map > 10 && phase === 'RDS') warnings.push('FiO₂ ≥0.40 with MAP >10 — criteria for repeat surfactant in first 72h if ongoing respiratory distress.');
     if (state.rate !== recRate) warnings.push(`Rate ${state.rate} differs from GA-recommended ${recRate} BPM for ${ga}wk. Decrease by 60 for PIE/pneumothorax; otherwise align to GA baseline.`);
     if (state.peep > 7) warnings.push('PEEP >7 in ELBW unusual — starting PEEP is 5; high PEEP risks hyperinflation and decreased elastic recoil.');
-  } else if (preset === 'bunnell') {
-    // Bunnell LifePulse clinical principles
-    if (state.fio2 > 0.30 && map < 7) warnings.push(`Bunnell weaning order: wean FiO₂ to <0.30 BEFORE lowering MAP. Current MAP ${map.toFixed(1)} may be too low given FiO₂ ${(state.fio2*100).toFixed(0)}%.`);
-    if (state.peep < 5 && state.fio2 > 0.40) warnings.push(`Bunnell: FiO₂ ${(state.fio2*100).toFixed(0)}% with PEEP ${state.peep} — FRC inadequately supported. Optimal PEEP typically 5–8 (up to 12 for CLD/oxygenation).`);
-    if (state.peep > 12) warnings.push('Bunnell: PEEP >12 rare — verify need. Higher PEEP risks over-distension, ↓ elastic recoil, ↓ venous return.');
-    if (state.pip > pipT.caution[1]) warnings.push(`Bunnell: Jet PIP ${state.pip} approaching failure range. Max TV generated at PIP ~50 with minimal PEEP. Consider HFOV if progressing.`);
-    if (state.rate !== 420) warnings.push(`Bunnell: default rate 420 BPM for most neonates. Consider 240–320 for air leak/obstructive disease. Keep rate steady during weaning.`);
+  } else if (preset === 'standard') {
+    // HFJV clinical principles
+    if (state.fio2 > 0.30 && map < 7) warnings.push(`HFJV weaning order: wean FiO₂ to <0.30 BEFORE lowering MAP. Current MAP ${map.toFixed(1)} may be too low given FiO₂ ${(state.fio2*100).toFixed(0)}%.`);
+    if (state.peep < 5 && state.fio2 > 0.40) warnings.push(`Standard: FiO₂ ${(state.fio2*100).toFixed(0)}% with PEEP ${state.peep} — FRC inadequately supported. Optimal PEEP typically 5–8 (up to 12 for CLD/oxygenation).`);
+    if (state.peep > 12) warnings.push('Standard: PEEP >12 rare — verify need. Higher PEEP risks over-distension, ↓ elastic recoil, ↓ venous return.');
+    if (state.pip > pipT.caution[1]) warnings.push(`Standard: Jet PIP ${state.pip} approaching failure range. Max TV generated at PIP ~50 with minimal PEEP. Consider HFOV if progressing.`);
+    if (state.rate !== 420) warnings.push(`Standard default: 420 BPM for most neonates. Consider 240–320 for air leak/obstructive disease. Keep rate steady during weaning.`);
   } else if (preset === 'cdh') {
     // Duke CDH protocol zones
     if (map > 22) warnings.push(`HAZARD ZONE: MAP ${map.toFixed(1)} >22 cmH₂O. Wean to Caution Zone (MAP 16–22) within hours. If unable to wean to Non-Ideal Acceptable parameters → ECMO must be considered.`);
@@ -2420,7 +2465,7 @@ function HFJVPanel({ state, setState, weight, ga }) {
               onChange={onPresetChange}
               options={[
                 { value: 'general', label: 'General' },
-                { value: 'bunnell', label: 'Bunnell' },
+                { value: 'standard', label: 'Standard' },
                 { value: 'elbw', label: 'B/O ELBW' },
                 { value: 'cdh', label: 'CDH' },
                 { value: 'mas', label: 'MAS' },
@@ -2428,9 +2473,9 @@ function HFJVPanel({ state, setState, weight, ga }) {
             />
           </div>
           <div className="flex-1 text-[11px] text-slate-400 leading-snug">
-            {preset === 'general' && 'First-intention HFJV for <27wk or <1000g (institutional Rev 4-2026): PEEP 5, PIP 20–24 ("good wiggle"), GA-or-weight-based rate, no initial sigh breaths. Extubation RDS: PEEP <7, Jet PIP <18, ΔP <10, MAP <8, FiO₂ <0.30.'}
-            {preset === 'bunnell' && 'Aligned with Bunnell LifePulse 204 Quick Reference Guide: PEEP 5–8 (up to 12 for CLD), rate 420 default, wean FiO₂ <0.30 before MAP, keep rate steady.'}
-            {preset === 'elbw' && 'Baptist/Ochsner aggressive ELBW failure pathway for <25wk and/or <500g: GA-based rate, RSS >4 → repeat surfactant, failure at PIP ≥45 or FiO₂ ≥75% → transition to HFOV.'}
+            {preset === 'general' && 'Standard first-intention HFJV for <27wk or <1000g: PEEP 5, PIP 20–24 ("good wiggle"), GA-or-weight-based rate, no initial sigh breaths. Extubation RDS: PEEP <7, Jet PIP <18, ΔP <10, MAP <8, FiO₂ <0.30.'}
+            {preset === 'standard' && 'Standard HFJV approach: PEEP 5–8 (up to 12 for CLD), rate 420 default, wean FiO₂ <0.30 before MAP, keep rate steady.'}
+            {preset === 'elbw' && 'Aggressive ELBW escalation pathway for <25wk and/or <500g: GA-based rate, RSS >4 → repeat surfactant, failure at PIP ≥45 or FiO₂ ≥75% → transition to HFOV.'}
             {preset === 'cdh' && 'Duke CDH protocol (Tracy 2010): gentle ventilation, PIP <24 target, switch to HFV at CV PIP >26 or MAP >12. Three zones (Safe/Caution/Hazard) by HFJV MAP. Permissive: PaCO₂ ≤65, preductal SpO₂ ≥85%, postductal pO₂ >30 if pH >7.25.'}
             {preset === 'mas' && 'MAS gas-trapping strategy (Tingay 2010 piglet model): Jet PIP ≤ prior CV PIP, LOW rate (240–300) for high I:E ratio (up to 1:12), minimal CMV sigh breaths. Setting Jet PIP > CV PIP causes non-dependent lung overdistension.'}
           </div>
@@ -2443,7 +2488,7 @@ function HFJVPanel({ state, setState, weight, ga }) {
           <AlertTriangle size={18} className="text-amber-400 flex-shrink-0 mt-0.5" />
           <div className="flex-1 text-xs">
             <div className="flex items-center gap-2 mb-0.5">
-              <span className="font-semibold text-amber-300 uppercase tracking-widest">Baptist/Ochsner ELBW Protocol · Active</span>
+              <span className="font-semibold text-amber-300 uppercase tracking-widest">Aggressive ELBW Protocol · Active</span>
               {!eligible && <span className="text-[10px] font-mono bg-amber-800/40 text-amber-200 px-2 py-0.5 rounded">applied outside {'<'}25wk and/or {'<'}500g criteria</span>}
             </div>
             <div className="text-amber-100/80">
@@ -2496,7 +2541,7 @@ function HFJVPanel({ state, setState, weight, ga }) {
               Patient fits ELBW criteria <span className="font-mono text-slate-500">· {ga}wk · {weight}kg</span>
             </div>
             <div className="text-slate-400">
-              Baptist/Ochsner &lt;25wk and/or &lt;500g protocol available — consider switching presets.
+              &lt;25wk / &lt;500g aggressive ELBW protocol available — consider switching presets.
             </div>
           </div>
           <button onClick={() => onPresetChange('elbw')} className="text-[11px] font-mono uppercase tracking-wider text-amber-300 hover:text-amber-200 bg-amber-900/30 hover:bg-amber-900/50 border border-amber-700/60 hover:border-amber-600 rounded px-3 py-1.5 whitespace-nowrap">
@@ -2553,7 +2598,7 @@ function HFJVPanel({ state, setState, weight, ga }) {
             <div className="text-[10px] font-mono text-rose-300/70 mt-1 num">
               {preset === 'general' && `Rec: ${recRate} (${ga}wk · ${weight}kg)`}
               {preset === 'elbw' && `GA-rec: ${recRate}`}
-              {preset === 'bunnell' && 'Bunnell default: 420'}
+              {preset === 'standard' && 'Standard default: 420'}
               {preset === 'cdh' && 'CDH: 360–420 typical · lower for PIE/PTX'}
               {preset === 'mas' && 'MAS: 240–300 (high I:E for gas trapping)'}
               {' · I:E 1:'}{ieRatio.toFixed(0)}
@@ -2656,19 +2701,19 @@ function HFJVPanel({ state, setState, weight, ga }) {
       {/* Sigh breath reference */}
       <SighBreathsReference />
 
-      {/* Bunnell principles — shown in general mode */}
-      {preset === 'bunnell' && <BunnellPrinciples />}
+      {/* HFJV clinical principles — shown in standard mode */}
+      {preset === 'standard' && <HfjvPrinciples />}
     </div>
   );
 }
 
-// =============== Bunnell Clinical Principles ===============
-function BunnellPrinciples() {
+// =============== HFJV Clinical Principles ===============
+function HfjvPrinciples() {
   return (
     <div className="bg-slate-900/40 border border-slate-800 rounded-lg p-4">
       <div className="flex items-baseline justify-between mb-3">
-        <h3 className="text-xs uppercase tracking-widest text-slate-400 font-mono">Bunnell LifePulse — general clinical principles</h3>
-        <span className="text-[10px] font-mono text-slate-600">from LifePulse 204 QRG</span>
+        <h3 className="text-xs uppercase tracking-widest text-slate-400 font-mono">HFJV — general clinical principles</h3>
+        <span className="text-[10px] font-mono text-slate-600">from manufacturer guidelines</span>
       </div>
       <div className="grid md:grid-cols-2 gap-3 text-xs">
         <div className="bg-slate-950/60 border border-slate-800 rounded p-3">
@@ -2708,7 +2753,7 @@ function BunnellPrinciples() {
           </ul>
         </div>
         <div className="bg-slate-950/60 border border-slate-800 rounded p-3">
-          <div className="font-semibold text-slate-200 mb-1">Optimal PEEP (Bunnell)</div>
+          <div className="font-semibold text-slate-200 mb-1">Optimal PEEP (HFJV)</div>
           <ul className="text-slate-400 space-y-1">
             <li>• Typical RDS: <span className="num text-slate-200">5–8</span> cmH₂O</li>
             <li>• CLD / oxygenation challenge: <span className="num text-slate-200">8–12</span> cmH₂O</li>
@@ -2847,7 +2892,7 @@ function SighBreathsReference() {
           <div className="text-slate-400 leading-snug">Only for atelectasis. PEEP <span className="text-slate-200">maintains</span> recruitment but does not <span className="text-slate-200">re-recruit</span> — sigh breaths re-recruit atelectatic lung. Don't start on admission from DR.</div>
         </div>
         <div className="bg-slate-950/60 border border-slate-800 rounded p-3">
-          <div className="font-semibold text-slate-200 mb-1">Settings (institutional)</div>
+          <div className="font-semibold text-slate-200 mb-1">Typical settings</div>
           <ul className="text-slate-400 leading-snug space-y-0.5">
             <li>· Rate <span className="num text-slate-200">4</span></li>
             <li>· PIP = <span className="num text-slate-200">PEEP + 5–10</span></li>
